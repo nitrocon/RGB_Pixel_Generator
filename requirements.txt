@@ -1,0 +1,10 @@
+pillow
+psutil
+torch
+torchvision
+torchaudio
+nuitka
+nuitka[python3]
+
+
+
