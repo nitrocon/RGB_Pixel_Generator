@@ -13,8 +13,8 @@ git clone https://github.com/nitrocon/RGB_Pixel_Generator.git
 cd RGB_Pixel_Generator
 python -m venv venv
 source venv/Scripts/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m ensurepip --upgrade
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu113
 python generator.py
 ```
 
