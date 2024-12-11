@@ -15,22 +15,6 @@ echo !COLOR_CYAN!=====================================================
 echo Welcome to the Project Runner!
 echo =====================================================
 
-REM Verify if Git is installed
-echo !COLOR_BLUE!Checking if Git is installed...
-git --version >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo !COLOR_RED!ERROR: Git is not installed.
-    echo Downloading and installing Git...
-
-    REM PowerShell verwenden, um Git herunterzuladen
-    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.40.0.windows.1/Git-2.40.0-64-bit.exe' -OutFile 'git-installer.exe'"
-    start /wait git-installer.exe /VERYSILENT /NORESTART
-    del git-installer.exe
-    echo !COLOR_GREEN!Git installed successfully.
-) else (
-    echo !COLOR_GREEN!Git found successfully.
-)
-
 REM Verify if Python 3.10 is installed
 echo !COLOR_BLUE!Checking if Python 3.10 is installed...
 
@@ -43,8 +27,8 @@ if %ERRORLEVEL% NEQ 0 (
     set PYTHON_INSTALLER=https://www.python.org/ftp/python/3.10.10/python-3.10.10-amd64.exe
     set INSTALLER_PATH=%TEMP%\python_installer.exe
 
-    REM Download the installer using curl (compatible with gitbash)
-    curl -L -o "%INSTALLER_PATH%" "%PYTHON_INSTALLER%"
+    REM Download the installer using PowerShell 
+    powershell -Command "Invoke-WebRequest -Uri '%PYTHON_INSTALLER%' -OutFile '%INSTALLER_PATH%'"
 
     REM Install Python 3.10 silently and add to PATH
     "%INSTALLER_PATH%" /quiet InstallAllUsers=1 PrependPath=1
@@ -141,4 +125,3 @@ echo All tasks completed! The batch script will now close.
 echo =====================================================
 pause
 exit
-
