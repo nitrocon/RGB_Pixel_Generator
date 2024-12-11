@@ -1,6 +1,7 @@
 # RGB Pixel Generator
 
-A powerful Python tool for generating RGB pixel images, optimized for CUDA and parallel processing.
+A Python tool for generating 1x1 Pixel in RGB and combines them with 256 Greyscale, optimized for CUDA and parallel processing.
+I use this tool to train several AI models.
 
 ## 📋 Installation
 
@@ -18,7 +19,8 @@ python generator.py
 
 ## 🛠 Features
 
-- Efficient Image Generation: Utilizes CUDA for faster pixel computation.
+- Generating 1x1 Pixel in RGB and combines them with 256 Greyscale
+- Efficient Image Generation: Utilizes CUDA for faster pixel computation. (Due to compatibility issues its not working)
 - Dynamic Memory Adjustment: Automatically adapts batch size based on available memory.
 - User-Friendly GUI: Provides an intuitive interface for configuring and monitoring the process.
 - Scalable Processing: Supports both CPU and GPU for optimal performance.
