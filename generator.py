@@ -1,4 +1,4 @@
-import os
+import os 
 import time
 from tkinter import *
 from tkinter import ttk
@@ -53,8 +53,15 @@ def get_batch_size(available_ram, available_gpu_memory, base_batch_size=30000):
 def generate_images(output_dir, num_colors_start, num_colors_end, image_width, image_height, progress_label, progress_bar, info_label, elapsed_label, update_progress_callback):
     global stop_generation
     try:
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
+        # Create the main 'RGB_Colors' folder if it doesn't exist
+        rgb_colors_dir = os.path.join(output_dir, "RGB_Colors")
+        os.makedirs(rgb_colors_dir, exist_ok=True)
+
+        # Create the subfolder named after the image size (e.g., 1x1 or 2x3) inside the RGB_Colors folder
+        size_folder = f"{image_width}x{image_height}"
+        color_folder = os.path.join(rgb_colors_dir, size_folder)
+        os.makedirs(color_folder, exist_ok=True)  # Ensure the subfolder for the size is created
+
         total_images = num_colors_end - num_colors_start + 1
         images_generated = 0
         skipped_images = 0
@@ -66,9 +73,9 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
                 elapsed_time = time.time() - start_time
                 estimated_time = (elapsed_time / images_generated) * (total_images - images_generated)
 
-                pixels_per_second = images_generated / elapsed_time if elapsed_time > 0 else 0
+                images_per_second = images_generated / elapsed_time if elapsed_time > 0 else 0
         
-                update_progress_callback(images_generated, total_images, estimated_time, pixels_per_second, skipped_images, elapsed_time)
+                update_progress_callback(images_generated, total_images, estimated_time, images_per_second, skipped_images, elapsed_time)
 
         # Dynamically select the device (GPU or CPU)
         device = get_device()
@@ -105,9 +112,6 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
 
         # Executor for parallel processing of batches
         with ThreadPoolExecutor() as executor:
-            color_folder = os.path.join(output_dir, "RGB_Colors")
-            os.makedirs(color_folder, exist_ok=True)
-
             # Get available memory to determine batch size
             available_ram, available_gpu_memory = get_available_memory()
             batch_size = get_batch_size(available_ram, available_gpu_memory)
@@ -188,14 +192,14 @@ def stop_generation_process():
     stop_generation = True
 
 # Update progress bar
-def update_progress_gui(images_generated, total_images, estimated_time, pixels_per_second, skipped_images, elapsed_time):
+def update_progress_gui(images_generated, total_images, estimated_time, images_per_second, skipped_images, elapsed_time):
     progress_label.config(
         text=f"Progress: {images_generated}/{total_images} "
              f"Remaining time: {format_time(estimated_time)}"
     )
     progress_bar['value'] = (images_generated / total_images) * 100
     info_label.config(text=f"Skipped Images: {skipped_images}")
-    speed_label.config(text=f"Pixels per Second: {pixels_per_second:.2f}")
+    speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
     elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
 
 # Get device (CPU or GPU)
@@ -234,32 +238,32 @@ output_dir_entry.grid(row=0, column=1, padx=10, pady=10)
 output_dir_button = Button(root, text="Output", command=select_output_folder, bg=button_color, fg=button_text_color, font=("Arial", 10, "bold"))
 output_dir_button.grid(row=0, column=2, padx=10, pady=10)
 
-Label(root, text="Color range:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=0, padx=10, pady=10, sticky=W)
+Label(root, text="Image size:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=0, padx=10, pady=10, sticky=W)
+image_width_var = IntVar(value=1)
+image_width_entry = Entry(root, textvariable=image_width_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+image_width_entry.grid(row=2, column=1, padx=10, pady=10, sticky=W)
+Label(root, text="x", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=1, padx=70, pady=10, sticky=W)
+image_height_var = IntVar(value=1)
+image_height_entry = Entry(root, textvariable=image_height_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+image_height_entry.grid(row=2, column=1, padx=100, pady=10, sticky=W)
+
+Label(root, text="Color range:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=0, padx=10, pady=10, sticky=W)
 num_colors_start_var = IntVar(value=0)
 num_colors_end_var = IntVar(value=16777215)
 num_colors_start_entry = Entry(root, textvariable=num_colors_start_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-num_colors_start_entry.grid(row=2, column=1, padx=10, pady=10, sticky=W)
-Label(root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=1, padx=70, pady=10, sticky=W)
+num_colors_start_entry.grid(row=3, column=1, padx=10, pady=10, sticky=W)
+Label(root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
 num_colors_end_entry = Entry(root, textvariable=num_colors_end_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-num_colors_end_entry.grid(row=2, column=1, padx=100, pady=10, sticky=W)
-
-Label(root, text="Image size:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=0, padx=10, pady=10, sticky=W)
-image_width_var = IntVar(value=1)
-image_width_entry = Entry(root, textvariable=image_width_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-image_width_entry.grid(row=3, column=1, padx=10, pady=10, sticky=W)
-Label(root, text="x", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
-image_height_var = IntVar(value=1)
-image_height_entry = Entry(root, textvariable=image_height_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-image_height_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
+num_colors_end_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
 
 # Progress label and frame for speed and elapsed time
 progress_label = Label(root, text="Progress: 0/0 images generated.", bg=bg_color, fg="white", font=("Arial", 10))
-progress_label.grid(row=4, column=0, columnspan=3, pady=5)
+progress_label.grid(row=5, column=0, columnspan=3, pady=5)
 
 speed_frame = Frame(root, bg=bg_color)
-speed_frame.grid(row=5, column=0, columnspan=3, padx=10, pady=10)
+speed_frame.grid(row=4, column=0, columnspan=3, padx=10, pady=10)
 
-speed_label = Label(speed_frame, text="Pixel per second: 0", bg=bg_color, fg="white", font=("Arial", 10))
+speed_label = Label(speed_frame, text="Image per second: 0", bg=bg_color, fg="white", font=("Arial", 10))
 speed_label.grid(row=0, column=0, columnspan=3, pady=0)
 
 elapsed_label = Label(speed_frame, text="Elapsed Time: 00:00:00", bg=bg_color, fg="white", font=("Arial", 10))
@@ -283,3 +287,4 @@ stop_button.grid(row=0, column=1, padx=10)
 
 # Start the main loop of the Tkinter window
 root.mainloop()
+
