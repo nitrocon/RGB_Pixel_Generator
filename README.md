@@ -1,21 +1,45 @@
-# RGB_Pixel_Generator
-Generates 1x1 Pixel of all colors multiplied with every greyscale
+# RGB Pixel Generator
 
-This App is in alpha status. 
-Detects CUDA, if nor available it uses the CPU (CUDA not fully implemented yet)
+A powerful Python tool for generating RGB pixel images, optimized for CUDA and parallel processing.
 
-This Python APP generates 256 folders for every greyscale. Its mixing every color with every greyscale.
+## 📋 Installation
 
-How to use (with CUDA 11.3 Support):
+Follow these steps to set up the project:
 
-```Bash
+```bash
 git clone https://github.com/nitrocon/RGB_Pixel_Generator.git
 cd RGB_Pixel_Generator
 python -m venv venv
 source venv/Scripts/activate
 pip install --upgrade pip
-pip install -r requirements.txt 
+pip install -r requirements.txt
 python generator.py
 ```
 
-CUDA: It is tested with CUDA 11.3, if you have another CUDA Version please install the correct pytorch (see a list from their website)
+## 🛠 Features
+
+- Efficient Image Generation: Utilizes CUDA for faster pixel computation.
+- Dynamic Memory Adjustment: Automatically adapts batch size based on available memory.
+- User-Friendly GUI: Provides an intuitive interface for configuring and monitoring the process.
+- Scalable Processing: Supports both CPU and GPU for optimal performance.
+
+## 📄 Usage
+
+1. Run the `generator.py` script.
+2. Use the GUI to set parameters such as greyscale range, color range, and output directory.
+3. Start the generation process and monitor progress via the GUI.
+
+## 🧑‍💻 Requirements
+
+- Python 3.6 or higher
+- `torch` library (for CUDA support)
+- `psutil` library (for memory management)
+- `PIL` (Python Imaging Library) for image generation
+- Tkinter (for GUI)
+
+✉️ Contact
+For questions or suggestions, reach out via:
+
+GitHub: nitrocon
+
+Let me know if you need further refinements!
