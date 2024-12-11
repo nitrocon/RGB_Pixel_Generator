@@ -29,7 +29,7 @@ python generator.py
 ## 📄 Usage
 
 1. Run the `generator.py` script.
-2. Use the GUI to set parameters such as greyscale range, color range, and output directory.
+2. Use the GUI to set parameters such as image size, color range, and output directory.
 3. Start the generation process and monitor progress via the GUI.
 
 ## 🧑‍💻 Requirements
