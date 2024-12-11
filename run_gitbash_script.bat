@@ -15,16 +15,54 @@ echo !COLOR_CYAN!=====================================================
 echo Welcome to the Project Runner!
 echo =====================================================
 
-REM Verify if Python is installed
-echo !COLOR_BLUE!Checking if Python is installed...
+REM Verify if Git is installed
+echo !COLOR_BLUE!Checking if Git is installed...
+git --version >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo !COLOR_RED!ERROR: Git is not installed.
+    echo Downloading and installing Git...
+
+    REM PowerShell verwenden, um Git herunterzuladen
+    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.40.0.windows.1/Git-2.40.0-64-bit.exe' -OutFile 'git-installer.exe'"
+    start /wait git-installer.exe /VERYSILENT /NORESTART
+    del git-installer.exe
+    echo !COLOR_GREEN!Git installed successfully.
+) else (
+    echo !COLOR_GREEN!Git found successfully.
+)
+
+REM Verify if Python 3.10 is installed
+echo !COLOR_BLUE!Checking if Python 3.10 is installed...
+
 python --version >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_RED!ERROR: Python is not installed or not in the system PATH.
-    echo Please install Python and ensure it is added to your PATH.
-    pause
-    exit /b 1
+    echo Trying to install Python 3.10...
+
+    REM Download Python 3.10 installer (Windows x64 executable)
+    set PYTHON_INSTALLER=https://www.python.org/ftp/python/3.10.10/python-3.10.10-amd64.exe
+    set INSTALLER_PATH=%TEMP%\python_installer.exe
+
+    REM Download the installer using curl (compatible with gitbash)
+    curl -L -o "%INSTALLER_PATH%" "%PYTHON_INSTALLER%"
+
+    REM Install Python 3.10 silently and add to PATH
+    "%INSTALLER_PATH%" /quiet InstallAllUsers=1 PrependPath=1
+
+    REM Clean up the installer
+    del "%INSTALLER_PATH%"
+
+    REM Verify Python installation
+    python --version >nul 2>nul
+    if %ERRORLEVEL% NEQ 0 (
+        echo !COLOR_RED!ERROR: Python 3.10 installation failed.
+        pause
+        exit /b 1
+    )
+    echo !COLOR_GREEN!Python 3.10 installed successfully.
+) else (
+    echo !COLOR_GREEN!Python found successfully.
 )
-echo !COLOR_GREEN!Python found successfully.
 
 REM Create a virtual environment
 echo !COLOR_YELLOW!====================================================
@@ -72,7 +110,7 @@ echo Step 3: Installing dependencies...
 echo ====================================================
 if exist "requirements.txt" (
     echo !COLOR_BLUE!Found requirements.txt. Installing dependencies...
-    pip install -r requirements.txt
+    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu113
     if %ERRORLEVEL% NEQ 0 (
         echo !COLOR_RED!ERROR: Failed to install dependencies from requirements.txt.
         pause
@@ -84,30 +122,6 @@ if exist "requirements.txt" (
     pause
     exit /b 1
 )
-
-REM Installing TensorFlow
-echo !COLOR_YELLOW!====================================================
-echo Step 4: Installing TensorFlow...
-echo ====================================================
-pip install tensorflow==2.10.0 --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v50
-if %ERRORLEVEL% NEQ 0 (
-    echo !COLOR_RED!ERROR: Failed to install TensorFlow.
-    pause
-    exit /b 1
-)
-echo !COLOR_GREEN!TensorFlow installed successfully.
-
-REM Installing PyTorch
-echo !COLOR_YELLOW!====================================================
-echo Step 5: Installing PyTorch and dependencies...
-echo ====================================================
-pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --index-url https://download.pytorch.org/whl/cu113
-if %ERRORLEVEL% NEQ 0 (
-    echo !COLOR_RED!ERROR: Failed to install PyTorch.
-    pause
-    exit /b 1
-)
-echo !COLOR_GREEN!PyTorch installed successfully.
 
 REM Run the generator.py script
 echo !COLOR_YELLOW!====================================================
