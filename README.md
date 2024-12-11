@@ -14,7 +14,7 @@ cd RGB_Pixel_Generator
 python -m venv venv
 source venv/Scripts/activate
 pip install --upgrade pip
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu124
+pip install -r requirements.txt 
 python generator.py
 ```
 
