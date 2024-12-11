@@ -5,7 +5,8 @@ I use this tool to train several AI models.
 
 ## 📋 Installation
 
-Follow these steps to set up the project:
+Run run_gitbash_script.bat (autoinstall) or
+follow these steps to set up the project:
 
 ```bash
 git clone https://github.com/nitrocon/RGB_Pixel_Generator.git
