@@ -5,7 +5,7 @@ I use this tool to train several AI models.
 
 ## 📋 Installation
 
-Run run_gitbash_script.bat (autoinstall) or
+Run autostart_script.bat (autoinstall) or
 follow these steps to set up the project:
 
 ```bash
