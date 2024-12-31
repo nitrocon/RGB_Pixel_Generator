@@ -5,7 +5,7 @@ I use this tool to train several AI models.
 
 ## 📋 Installation
 
-Run autostart_script.bat (autoinstall) or
+Run autostart_script.bat (autoinstall, you need Python 3.12) or
 follow these steps to set up the project:
 
 ```bash
@@ -13,8 +13,6 @@ git clone https://github.com/nitrocon/RGB_Pixel_Generator.git
 cd RGB_Pixel_Generator
 python -m venv venv
 source venv/Scripts/activate
-python -m ensurepip --upgrade
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu113
 python generator.py
 ```
 
@@ -22,6 +20,7 @@ python generator.py
 
 - Generating Images with an adjustable pixelsize
 - Efficient Image Generation: Utilizes CUDA for faster pixel computation. (Due to compatibility issues its not working)
+- Is skipping already existing images
 - Dynamic Memory Adjustment: Automatically adapts batch size based on available memory.
 - User-Friendly GUI: Provides an intuitive interface for configuring and monitoring the process.
 - Scalable Processing: Supports both CPU and GPU for optimal performance.
@@ -34,7 +33,7 @@ python generator.py
 
 ## 🧑‍💻 Requirements
 
-- Python 3.6 or higher
+- Python 3.12 (autostart script is looking for it)
 - `torch` library (for CUDA support)
 - `psutil` library (for memory management)
 - `PIL` (Python Imaging Library) for image generation
