@@ -15,28 +15,29 @@ echo !COLOR_CYAN!=====================================================
 echo Welcome to the Project Runner!
 echo =====================================================
 
-REM Verify if Python is installed
-echo !COLOR_BLUE!Checking if Python is installed...
-python --version >nul 2>nul
+REM Verify if Python 3.12 is installed
+echo !COLOR_BLUE!Checking if Python 3.12 is installed...
+for /f "tokens=2 delims= " %%i in ('python --version') do set PYTHON_VERSION=%%i
+echo %PYTHON_VERSION% | findstr /r /c:"3\.12\." >nul
 if %ERRORLEVEL% NEQ 0 (
-    echo !COLOR_RED!ERROR: Python is not installed or not in the system PATH.
-    echo Please install Python and ensure it is added to your PATH.
+    echo !COLOR_RED!ERROR: Python 3.12 is not installed or not in the system PATH.
+    echo Please install Python 3.12 and ensure it is added to your PATH.
     pause
     exit /b 1
 )
-echo !COLOR_GREEN!Python found successfully.
+echo !COLOR_GREEN!Python 3.12 found successfully.
 
-REM Create a virtual environment
+REM Create a virtual environment with Python 3.12
 echo !COLOR_YELLOW!====================================================
-echo Step 1: Creating virtual environment...
+echo Step 1: Creating virtual environment with Python 3.12...
 echo ====================================================
-C:/Users/offic/AppData/Local/Programs/Python/Python312/python.exe -m venv venv
+python -m venv venv
 if %ERRORLEVEL% NEQ 0 (
-    echo !COLOR_RED!ERROR: Failed to create virtual environment.
+    echo !COLOR_RED!ERROR: Failed to create virtual environment with Python 3.12.
     pause
     exit /b 1
 )
-echo !COLOR_GREEN!Virtual environment created successfully.
+echo !COLOR_GREEN!Virtual environment created successfully with Python 3.12.
 
 REM Activate the virtual environment
 echo !COLOR_YELLOW!====================================================
