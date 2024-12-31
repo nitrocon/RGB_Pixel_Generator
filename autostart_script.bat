@@ -15,44 +15,22 @@ echo !COLOR_CYAN!=====================================================
 echo Welcome to the Project Runner!
 echo =====================================================
 
-REM Verify if Python 3.10 is installed
-echo !COLOR_BLUE!Checking if Python 3.10 is installed...
-
+REM Verify if Python is installed
+echo !COLOR_BLUE!Checking if Python is installed...
 python --version >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_RED!ERROR: Python is not installed or not in the system PATH.
-    echo Trying to install Python 3.10...
-
-    REM Download Python 3.10 installer (Windows x64 executable)
-    set PYTHON_INSTALLER=https://www.python.org/ftp/python/3.10.10/python-3.10.10-amd64.exe
-    set INSTALLER_PATH=%TEMP%\python_installer.exe
-
-    REM Download the installer using PowerShell 
-    powershell -Command "Invoke-WebRequest -Uri '%PYTHON_INSTALLER%' -OutFile '%INSTALLER_PATH%'"
-
-    REM Install Python 3.10 silently and add to PATH
-    "%INSTALLER_PATH%" /quiet InstallAllUsers=1 PrependPath=1
-
-    REM Clean up the installer
-    del "%INSTALLER_PATH%"
-
-    REM Verify Python installation
-    python --version >nul 2>nul
-    if %ERRORLEVEL% NEQ 0 (
-        echo !COLOR_RED!ERROR: Python 3.10 installation failed.
-        pause
-        exit /b 1
-    )
-    echo !COLOR_GREEN!Python 3.10 installed successfully.
-) else (
-    echo !COLOR_GREEN!Python found successfully.
+    echo Please install Python and ensure it is added to your PATH.
+    pause
+    exit /b 1
 )
+echo !COLOR_GREEN!Python found successfully.
 
 REM Create a virtual environment
 echo !COLOR_YELLOW!====================================================
 echo Step 1: Creating virtual environment...
 echo ====================================================
-python -m venv venv
+C:/Users/offic/AppData/Local/Programs/Python/Python312/python.exe -m venv venv
 if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_RED!ERROR: Failed to create virtual environment.
     pause
@@ -72,6 +50,10 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo !COLOR_GREEN!Virtual environment activated.
 
+REM Display the Python version in the activated environment
+echo !COLOR_BLUE!Python version in the virtual environment:
+python --version
+
 REM Check if pip is installed in the virtual environment
 echo !COLOR_BLUE!Checking if pip is installed in the virtual environment...
 python -m pip --version >nul 2>nul
@@ -86,25 +68,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_GREEN!pip installed successfully in the virtual environment.
 ) else (
     echo !COLOR_GREEN!pip is already installed in the virtual environment.
-)
-
-REM Install dependencies (check if requirements.txt exists)
-echo !COLOR_YELLOW!====================================================
-echo Step 3: Installing dependencies...
-echo ====================================================
-if exist "requirements.txt" (
-    echo !COLOR_BLUE!Found requirements.txt. Installing dependencies...
-    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu113
-    if %ERRORLEVEL% NEQ 0 (
-        echo !COLOR_RED!ERROR: Failed to install dependencies from requirements.txt.
-        pause
-        exit /b 1
-    )
-    echo !COLOR_GREEN!Dependencies installed successfully.
-) else (
-    echo !COLOR_RED!ERROR: requirements.txt not found. Cannot proceed with dependency installation.
-    pause
-    exit /b 1
 )
 
 REM Run the generator.py script
