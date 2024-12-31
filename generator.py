@@ -1,17 +1,29 @@
-import os 
-import time
+import setup
+setup.setup()
+
+import subprocess
+import sys
+import os
+import logging
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 from PIL import Image
-import psutil  # For resource management
+import psutil
 import threading
 import torch
 import numpy as np
-import sys
 import gc
 from concurrent.futures import ThreadPoolExecutor
+import time
+
+# Configure logging to output to console
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]  # Log output to console
+)
 
 sys.setrecursionlimit(100000)
 
@@ -20,47 +32,70 @@ stop_generation = False
 
 # CUDA optimization: Pixel values generation
 def generate_pixel_values(num_colors_start, num_colors_end, device):
-    # Create a range of pixel values (r, g, b)
-    num_colors_range = torch.arange(num_colors_start, num_colors_end + 1, device=device)
-    r = num_colors_range % 256
-    g = torch.div(num_colors_range, 256, rounding_mode='trunc') % 256
-    b = torch.div(num_colors_range, 256 * 256, rounding_mode='trunc') % 256
-    return r, g, b
+    try:
+        logging.info(f"Generating pixel values from {num_colors_start} to {num_colors_end} on {device}.")
+        # Create a range of pixel values (r, g, b)
+        num_colors_range = torch.arange(num_colors_start, num_colors_end + 1, device=device)
+        r = num_colors_range % 256
+        g = torch.div(num_colors_range, 256, rounding_mode='trunc') % 256
+        b = torch.div(num_colors_range, 256 * 256, rounding_mode='trunc') % 256
+        logging.info("Pixel values generated successfully.")
+        return r, g, b
+    except Exception as e:
+        logging.error(f"Error in generate_pixel_values: {e}")
+        raise
 
 # Get available memory (RAM and GPU) and adjust batch size accordingly
 def get_available_memory():
-    # Get available system RAM
-    available_ram = psutil.virtual_memory().available / (2048 ** 2)  # in MB
-    if torch.cuda.is_available():
-        # Get available GPU memory
-        gpu_memory = torch.cuda.memory_allocated() / (2048 ** 2)  # in MB
-        max_gpu_memory = torch.cuda.get_device_properties(0).total_memory / (2048 ** 2)  # in MB
-        available_gpu_memory = max_gpu_memory - gpu_memory
-        return available_ram, available_gpu_memory
-    return available_ram, 0
+    try:
+        logging.info("Getting available memory.")
+        # Get available system RAM
+        available_ram = psutil.virtual_memory().available / (1024 ** 2)  # in MB
+        if torch.cuda.is_available():
+            # Get available GPU memory
+            gpu_memory = torch.cuda.memory_allocated() / (1024 ** 2)  # in MB
+            max_gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024 ** 2)  # in MB
+            available_gpu_memory = max_gpu_memory - gpu_memory
+            logging.info(f"Available RAM: {available_ram} MB, Available GPU Memory: {available_gpu_memory} MB.")
+            return available_ram, available_gpu_memory
+        else:
+            logging.info(f"Available RAM: {available_ram} MB, No GPU available.")
+            return available_ram, 0
+    except Exception as e:
+        logging.error(f"Error in get_available_memory: {e}")
+        raise
 
 # Dynamically adjust the batch size based on available memory
 def get_batch_size(available_ram, available_gpu_memory, base_batch_size=30000):
-    # Estimate batch size based on available resources
-    estimated_batch_size = base_batch_size
-    if available_gpu_memory > 500:  # If more than 5GB GPU memory is available, use larger batch
-        estimated_batch_size = base_batch_size * 2
-    elif available_ram > 400:  # If more than 4GB system RAM is available, increase batch size
-        estimated_batch_size = base_batch_size * 1.5
-    return int(estimated_batch_size)
+    try:
+        logging.info("Adjusting batch size based on available memory.")
+        # Estimate batch size based on available resources
+        estimated_batch_size = base_batch_size
+        if available_gpu_memory > 500:  # If more than 500mb GPU memory is available, use larger batch
+            estimated_batch_size = base_batch_size * 2
+        elif available_ram > 400:  # If more than 400mb system RAM is available, increase batch size
+            estimated_batch_size = base_batch_size * 1.5
+        logging.info(f"Batch size set to {estimated_batch_size}.")
+        return int(estimated_batch_size)
+    except Exception as e:
+        logging.error(f"Error in get_batch_size: {e}")
+        raise
 
 # Handle generation of images
 def generate_images(output_dir, num_colors_start, num_colors_end, image_width, image_height, progress_label, progress_bar, info_label, elapsed_label, update_progress_callback):
     global stop_generation
     try:
+        logging.info(f"Starting image generation. Output directory: {output_dir}, Color range: {num_colors_start}-{num_colors_end}, Image size: {image_width}x{image_height}.")
         # Create the main 'RGB_Colors' folder if it doesn't exist
         rgb_colors_dir = os.path.join(output_dir, "RGB_Colors")
-        os.makedirs(rgb_colors_dir, exist_ok=True)
+        os.makedirs(rgb_colors_dir, exist_ok=True)  # Ensure RGB_Colors is created once at the output_dir
+        logging.info(f"Created output directory: {rgb_colors_dir}.")
 
         # Create the subfolder named after the image size (e.g., 1x1 or 2x3) inside the RGB_Colors folder
         size_folder = f"{image_width}x{image_height}"
         color_folder = os.path.join(rgb_colors_dir, size_folder)
         os.makedirs(color_folder, exist_ok=True)  # Ensure the subfolder for the size is created
+        logging.info(f"Created size folder: {color_folder}.")
 
         total_images = num_colors_end - num_colors_start + 1
         images_generated = 0
@@ -111,7 +146,7 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
             torch.cuda.empty_cache()
 
         # Executor for parallel processing of batches
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=4) as executor:  # Begrenzung der parallelen Threads auf 4
             # Get available memory to determine batch size
             available_ram, available_gpu_memory = get_available_memory()
             batch_size = get_batch_size(available_ram, available_gpu_memory)
@@ -138,69 +173,96 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
         # Show completion message
         if not stop_generation:
             messagebox.showinfo("Finished", "The images have been successfully generated!")
+            logging.info("Image generation completed successfully.")
         else:
             messagebox.showinfo("Aborted", "The image generation has been stopped.")
+            logging.info("Image generation was stopped by the user.")
 
     except Exception as e:
         # Handle errors
+        logging.error(f"Error during image generation: {e}", exc_info=True)
         messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Format time function
 def format_time(seconds):
-    # Convert seconds to days, hours, minutes, and seconds
-    days, remainder = divmod(seconds, 86400)  # 1 day = 86400 seconds
-    hours, remainder = divmod(remainder, 3600)  # 1 hour = 3600 seconds
-    minutes, seconds = divmod(remainder, 60)  # 1 minute = 60 seconds
+    try:
+        # Convert seconds to days, hours, minutes, and seconds
+        days, remainder = divmod(seconds, 86400)  # 1 day = 86400 seconds
+        hours, remainder = divmod(remainder, 3600)  # 1 hour = 3600 seconds
+        minutes, seconds = divmod(remainder, 60)  # 1 minute = 60 seconds
 
-    # Ensure seconds are shown as whole numbers (no decimals)
-    days = int(days)
-    hours = int(hours)
-    minutes = int(minutes)
-    seconds = int(seconds)
-    
-    if days > 0:
-        return f"{days} Days, {hours} h"
-    else:
-        return f"{hours} h {minutes} min {seconds} sec"
+        # Ensure seconds are shown as whole numbers (no decimals)
+        days = int(days)
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds)
+        
+        if days > 0:
+            return f"{days} Days, {hours} h"
+        else:
+            return f"{hours} h {minutes} min {seconds} sec"
+    except Exception as e:
+        logging.error(f"Error in format_time: {e}")
+        raise
 
 # Folder selection dialog
 def select_output_folder():
-    folder = filedialog.askdirectory()
-    if folder:
-        output_dir_var.set(folder)
+    try:
+        folder = filedialog.askdirectory()
+        if folder:
+            output_dir_var.set(folder)
+            logging.info(f"Output directory selected: {folder}")
+    except Exception as e:
+        logging.error(f"Error in select_output_folder: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Start generation
 def start_generation():
     global stop_generation
     stop_generation = False
-    threading.Thread(target=generate_images, args=(
-        output_dir_var.get(),
-        num_colors_start_var.get(),
-        num_colors_end_var.get(),
-        image_width_var.get(),
-        image_height_var.get(),
-        progress_label,
-        progress_bar,
-        elapsed_label,
-        info_label,
-        update_progress_gui
-    ), daemon=True).start()
+    try:
+        logging.info("Starting image generation process.")
+        threading.Thread(target=generate_images, args=(
+            output_dir_var.get(),
+            num_colors_start_var.get(),
+            num_colors_end_var.get(),
+            image_width_var.get(),
+            image_height_var.get(),
+            progress_label,
+            progress_bar,
+            elapsed_label,
+            info_label,
+            update_progress_gui
+        ), daemon=True).start()
+    except Exception as e:
+        logging.error(f"Error in start_generation: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Stop generation process
 def stop_generation_process():
     global stop_generation
-    stop_generation = True
+    try:
+        stop_generation = True
+        logging.info("Stopping image generation process.")
+    except Exception as e:
+        logging.error(f"Error in stop_generation_process: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Update progress bar
 def update_progress_gui(images_generated, total_images, estimated_time, images_per_second, skipped_images, elapsed_time):
-    progress_label.config(
-        text=f"Progress: {images_generated}/{total_images} "
-             f"Remaining time: {format_time(estimated_time)}"
-    )
-    progress_bar['value'] = (images_generated / total_images) * 100
-    info_label.config(text=f"Skipped Images: {skipped_images}")
-    speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
-    elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
+    try:
+        progress_label.config(
+            text=f"Progress: {images_generated}/{total_images} "
+                 f"Remaining time: {format_time(estimated_time)}"
+        )
+        progress_bar['value'] = (images_generated / total_images) * 100
+        info_label.config(text=f"Skipped Images: {skipped_images}")
+        speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
+        elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
+        logging.info(f"Progress: {images_generated}/{total_images}, Remaining time: {format_time(estimated_time)}, Images per second: {images_per_second:.2f}, Elapsed time: {format_time(elapsed_time)}, Skipped images: {skipped_images}")
+    except Exception as e:
+        logging.error(f"Error in update_progress_gui: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Get device (CPU or GPU)
 def get_device():
@@ -208,11 +270,14 @@ def get_device():
         if torch.cuda.is_available():
             device = torch.device("cuda")
             torch.backends.cudnn.benchmark = True
+            logging.info("Using GPU for computation.")
         else:
             device = torch.device("cpu")
+            logging.info("Using CPU for computation.")
         return device
     except Exception as e:
-        print(f"Error in device selection: {e}")
+        logging.error(f"Error in device selection: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}")
         return torch.device("cpu")
 
 # Create main window
