@@ -20,7 +20,7 @@ python generator.py
 ## 🛠 Features
 
 - Generating Images with an adjustable pixelsize
-- Efficient Image Generation: Utilizes CUDA for faster pixel computation. (Due to compatibility issues its not working)
+- Efficient Image Generation: Utilizes CUDA for faster pixel computation. 
 - Is skipping already existing images
 - Dynamic Memory Adjustment: Automatically adapts batch size based on available memory.
 - User-Friendly GUI: Provides an intuitive interface for configuring and monitoring the process.
@@ -38,7 +38,6 @@ python generator.py
 - `torch` library (for CUDA support)
 - `psutil` library (for memory management)
 - `PIL` (Python Imaging Library) for image generation
-- Tkinter (for GUI)
 
 ✉️ Contact
 For questions or suggestions, reach out via:
