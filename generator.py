@@ -210,8 +210,8 @@ def select_output_folder():
     try:
         folder = filedialog.askdirectory()
         if folder:
-            output_dir_var.set(folder)
-            logging.info(f"Output directory selected: {folder}")
+            output_dir_var.set(os.path.join(folder, "RGB_Colors"))
+            logging.info(f"Output directory selected: {folder}/RGB_Colors")
     except Exception as e:
         logging.error(f"Error in select_output_folder: {e}")
         messagebox.showerror("Error", f"An error occurred: {e}")
