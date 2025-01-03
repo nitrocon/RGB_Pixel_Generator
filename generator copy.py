@@ -16,11 +16,14 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 
 # Configure logging to output to console
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]  # Log output to console
-)
+def configure_logging():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[logging.StreamHandler()]  # Log output to console
+    )
+
+configure_logging()
 
 sys.setrecursionlimit(100000)
 
@@ -79,10 +82,28 @@ def get_batch_size(available_ram, available_gpu_memory, base_batch_size=30000):
         raise
 
 # Handle generation of images
-def generate_images(output_dir, num_colors_start, num_colors_end, image_width, image_height, progress_label, progress_bar, info_label, elapsed_label, update_progress_callback):
+def generate_mandala_pattern(image_width, image_height, colors):
+    """
+    Generates a mandala pattern with the specified colors.
+    """
+    img = Image.new("RGB", (image_width, image_height))
+    pixels = img.load()
+
+    num_colors = len(colors)
+    center_x, center_y = image_width // 2, image_height // 2
+
+    for y in range(image_height):
+        for x in range(image_width):
+            distance = ((x - center_x) ** 2 + (y - center_y) ** 2) ** 0.5
+            color_index = int(distance) % num_colors
+            pixels[x, y] = colors[color_index]
+
+    return img
+
+def generate_images(output_dir, num_colors_start, num_colors_end, image_width, image_height, colors_per_image, pattern_type, progress_label, progress_bar, info_label, elapsed_label, update_progress_callback):
     global stop_generation
     try:
-        logging.info(f"Starting image generation. Output directory: {output_dir}, Color range: {num_colors_start}-{num_colors_end}, Image size: {image_width}x{image_height}.")
+        logging.info(f"Starting image generation. Output directory: {output_dir}, Color range: {num_colors_start}-{num_colors_end}, Image size: {image_width}x{image_height}, Colors per image: {colors_per_image}, Pattern type: {pattern_type}.")
         
         # Check if 'RGB_Colors' is already in the output_dir
         if not output_dir.endswith("RGB_Colors"):
@@ -98,7 +119,7 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
         os.makedirs(color_folder, exist_ok=True)  # Ensure the subfolder for the size is created
         logging.info(f"Created size folder: {color_folder}.")
 
-        total_images = num_colors_end - num_colors_start + 1
+        total_images = (num_colors_end - num_colors_start + 1) // colors_per_image
         images_generated = 0
         skipped_images = 0
         start_time = time.time()
@@ -122,12 +143,12 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
             r_values, g_values, b_values = generate_pixel_values(start_idx, end_idx, device)
 
             # Generate images for the batch
-            for idx, (r, g, b) in enumerate(zip(r_values.cpu().numpy(), g_values.cpu().numpy(), b_values.cpu().numpy())):
+            for idx in range(0, len(r_values), colors_per_image):
                 if stop_generation:
                     break
 
-                # Create hex color code for the RGB values
-                hex_color = f"{r:02X}{g:02X}{b:02X}"
+                color_set = [(r_values[i].item(), g_values[i].item(), b_values[i].item()) for i in range(idx, min(idx + colors_per_image, len(r_values)))]
+                hex_color = ''.join([f"{r:02X}{g:02X}{b:02X}" for r, g, b in color_set])
                 file_name = f"{hex_color}.png"
                 file_path = os.path.join(color_folder, file_name)
 
@@ -137,8 +158,12 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
                     update_progress()  # Update even when skipping an image
                     continue
 
-                # Generate the image with the specified size (e.g., 1x1 or 2x3)
-                img = Image.new("RGB", (image_width, image_height), (r, g, b))
+                # Generate the image based on the selected pattern type
+                if pattern_type == "mandala":
+                    img = generate_mandala_pattern(image_width, image_height, color_set)
+                else:
+                    img = Image.new("RGB", (image_width, image_height), color_set[0])  # Default to single color image
+
                 img.save(file_path)
                 images_generated += 1
                 update_progress()
@@ -152,7 +177,7 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
             available_ram, available_gpu_memory = get_available_memory()
             batch_size = get_batch_size(available_ram, available_gpu_memory)
             total_colors = num_colors_end - num_colors_start + 1
-            batches = total_colors // batch_size + (1 if total_colors % batch_size != 0 else 0)
+            batches = total_colors // (batch_size * colors_per_image) + (1 if total_colors % (batch_size * colors_per_image) != 0 else 0)
 
             # Submit batch processing jobs
             futures = []
@@ -160,8 +185,8 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
                 if stop_generation:
                     break
 
-                start_idx = num_colors_start + batch_idx * batch_size
-                end_idx = min(num_colors_start + (batch_idx + 1) * batch_size - 1, num_colors_end)
+                start_idx = num_colors_start + batch_idx * batch_size * colors_per_image
+                end_idx = min(num_colors_start + (batch_idx + 1) * batch_size * colors_per_image - 1, num_colors_end)
 
                 futures.append(executor.submit(process_batch, batch_idx, start_idx, end_idx, color_folder))
 
@@ -211,7 +236,7 @@ def select_output_folder():
     try:
         folder = filedialog.askdirectory()
         if folder:
-            output_dir_var.set(os.path.join(folder, "RGB_Colors"))
+            app.output_dir_var.set(os.path.join(folder, "RGB_Colors"))
             logging.info(f"Output directory selected: {folder}/RGB_Colors")
     except Exception as e:
         logging.error(f"Error in select_output_folder: {e}")
@@ -224,16 +249,18 @@ def start_generation():
     try:
         logging.info("Starting image generation process.")
         threading.Thread(target=generate_images, args=(
-            output_dir_var.get(),
-            num_colors_start_var.get(),
-            num_colors_end_var.get(),
-            image_width_var.get(),
-            image_height_var.get(),
-            progress_label,
-            progress_bar,
-            elapsed_label,
-            info_label,
-            update_progress_gui
+            app.output_dir_var.get(),
+            app.num_colors_start_var.get(),
+            app.num_colors_end_var.get(),
+            app.image_width_var.get(),
+            app.image_height_var.get(),
+            app.colors_per_image_var.get(),
+            app.pattern_type_var.get(),
+            app.progress_label,
+            app.progress_bar,
+            app.info_label,
+            app.elapsed_label,
+            app.update_progress_gui
         ), daemon=True).start()
     except Exception as e:
         logging.error(f"Error in start_generation: {e}")
@@ -252,14 +279,14 @@ def stop_generation_process():
 # Update progress bar
 def update_progress_gui(images_generated, total_images, estimated_time, images_per_second, skipped_images, elapsed_time):
     try:
-        progress_label.config(
+        app.progress_label.config(
             text=f"Progress: {images_generated}/{total_images} "
                  f"Remaining time: {format_time(estimated_time)}"
         )
-        progress_bar['value'] = (images_generated / total_images) * 100
-        info_label.config(text=f"Skipped Images: {skipped_images}")
-        speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
-        elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
+        app.progress_bar['value'] = (images_generated / total_images) * 100
+        app.info_label.config(text=f"Skipped Images: {skipped_images}")
+        app.speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
+        app.elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
         logging.info(f"Progress: {images_generated}/{total_images}, Remaining time: {format_time(estimated_time)}, Images per second: {images_per_second:.2f}, Elapsed time: {format_time(elapsed_time)}, Skipped images: {skipped_images}")
     except Exception as e:
         logging.error(f"Error in update_progress_gui: {e}")
@@ -281,76 +308,112 @@ def get_device():
         messagebox.showerror("Error", f"An error occurred: {e}")
         return torch.device("cpu")
 
-# Create main window
-root = Tk()
-root.title("RGB_Pixel_Generator")
-root.resizable(True, True)  # Allow window resizing
+# GUI class
+class RGBPixelGeneratorGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("RGB_Pixel_Generator")
+        self.root.resizable(True, True)  # Allow window resizing
 
-# Colors for the design
-bg_color = "#1D3557"        # Background color of the main window
-label_color = "#457B9D"     # Label color
-entry_bg_color = "#A8DADC"  # Background color of entry fields
-button_color = "#E63946"    # Button background color
-button_text_color = "white" # Button text color
-entry_text_color = "black"  # Entry text color
+        # Colors for the design
+        bg_color = "#1D3557"        # Background color of the main window
+        label_color = "#457B9D"     # Label color
+        entry_bg_color = "#A8DADC"  # Background color of entry fields
+        button_color = "#E63946"    # Button background color
+        button_text_color = "white" # Button text color
+        entry_text_color = "black"  # Entry text color
 
-root.configure(bg=bg_color)
+        self.root.configure(bg=bg_color)
 
-# Define labels and input fields
-Label(root, text="Output dir:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=10, pady=10, sticky=W)
-output_dir_var = StringVar()
-output_dir_entry = Entry(root, textvariable=output_dir_var, width=40, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-output_dir_entry.grid(row=0, column=1, padx=10, pady=10)
-output_dir_button = Button(root, text="Output", command=select_output_folder, bg=button_color, fg=button_text_color, font=("Arial", 10, "bold"))
-output_dir_button.grid(row=0, column=2, padx=10, pady=10)
+        # Define labels and input fields
+        Label(self.root, text="Output dir:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=10, pady=10, sticky=W)
+        self.output_dir_var = StringVar()
+        output_dir_entry = Entry(self.root, textvariable=self.output_dir_var, width=40, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        output_dir_entry.grid(row=0, column=1, padx=10, pady=10)
+        output_dir_button = Button(self.root, text="Output", command=select_output_folder, bg=button_color, fg=button_text_color, font=("Arial", 10, "bold"))
+        output_dir_button.grid(row=0, column=2, padx=10, pady=10)
 
-Label(root, text="Image size:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=0, padx=10, pady=10, sticky=W)
-image_width_var = IntVar(value=1)
-image_width_entry = Entry(root, textvariable=image_width_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-image_width_entry.grid(row=2, column=1, padx=10, pady=10, sticky=W)
-Label(root, text="x", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=1, padx=70, pady=10, sticky=W)
-image_height_var = IntVar(value=1)
-image_height_entry = Entry(root, textvariable=image_height_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-image_height_entry.grid(row=2, column=1, padx=100, pady=10, sticky=W)
+        Label(self.root, text="Image size:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=0, padx=10, pady=10, sticky=W)
+        self.image_width_var = IntVar(value=1)
+        image_width_entry = Entry(self.root, textvariable=self.image_width_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        image_width_entry.grid(row=2, column=1, padx=10, pady=10, sticky=W)
+        Label(self.root, text="x", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=1, padx=70, pady=10, sticky=W)
+        self.image_height_var = IntVar(value=1)
+        image_height_entry = Entry(self.root, textvariable=self.image_height_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        image_height_entry.grid(row=2, column=1, padx=100, pady=10, sticky=W)
 
-Label(root, text="Color range:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=0, padx=10, pady=10, sticky=W)
-num_colors_start_var = IntVar(value=0)
-num_colors_end_var = IntVar(value=16777215)
-num_colors_start_entry = Entry(root, textvariable=num_colors_start_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-num_colors_start_entry.grid(row=3, column=1, padx=10, pady=10, sticky=W)
-Label(root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
-num_colors_end_entry = Entry(root, textvariable=num_colors_end_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-num_colors_end_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
+        Label(self.root, text="Color range:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=0, padx=10, pady=10, sticky=W)
+        self.num_colors_start_var = IntVar(value=0)
+        self.num_colors_end_var = IntVar(value=16777215)
+        num_colors_start_entry = Entry(self.root, textvariable=self.num_colors_start_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        num_colors_start_entry.grid(row=3, column=1, padx=10, pady=10, sticky=W)
+        Label(self.root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
+        num_colors_end_entry = Entry(self.root, textvariable=self.num_colors_end_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        num_colors_end_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
 
-# Progress label and frame for speed and elapsed time
-progress_label = Label(root, text="Progress: 0/0 images generated.", bg=bg_color, fg="white", font=("Arial", 10))
-progress_label.grid(row=5, column=0, columnspan=3, pady=5)
+        Label(self.root, text="Colors per image:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=4, column=0, padx=10, pady=10, sticky=W)
+        self.colors_per_image_var = IntVar(value=5)
+        colors_per_image_entry = Entry(self.root, textvariable=self.colors_per_image_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        colors_per_image_entry.grid(row=4, column=1, padx=10, pady=10, sticky=W)
 
-speed_frame = Frame(root, bg=bg_color)
-speed_frame.grid(row=4, column=0, columnspan=3, padx=10, pady=10)
+        Label(self.root, text="Pattern type:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=5, column=0, padx=10, pady=10, sticky=W)
+        self.pattern_type_var = StringVar(value="single")
+        pattern_type_menu = OptionMenu(self.root, self.pattern_type_var, "single", "mandala")
+        pattern_type_menu.config(bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+        pattern_type_menu.grid(row=5, column=1, padx=10, pady=10, sticky=W)
 
-speed_label = Label(speed_frame, text="Image per second: 0", bg=bg_color, fg="white", font=("Arial", 10))
-speed_label.grid(row=0, column=0, columnspan=3, pady=0)
+        # Progress label and frame for speed and elapsed time
+        self.progress_label = Label(self.root, text="Progress: 0/0 images generated.", bg=bg_color, fg="white", font=("Arial", 10))
+        self.progress_label.grid(row=6, column=0, columnspan=3, pady=5)
 
-elapsed_label = Label(speed_frame, text="Elapsed Time: 00:00:00", bg=bg_color, fg="white", font=("Arial", 10))
-elapsed_label.grid(row=1, column=0, columnspan=3, pady=0)
+        speed_frame = Frame(self.root, bg=bg_color)
+        speed_frame.grid(row=7, column=0, columnspan=3, padx=10, pady=10)
 
-progress_bar = ttk.Progressbar(root, length=500, mode='determinate')
-progress_bar.grid(row=6, column=0, columnspan=3, padx=10, pady=5)
+        self.speed_label = Label(speed_frame, text="Image per second: 0", bg=bg_color, fg="white", font=("Arial", 10))
+        self.speed_label.grid(row=0, column=0, columnspan=3, pady=0)
 
-info_label = Label(root, text="Skipped images: 0", bg=bg_color, fg="white", font=("Arial", 10))
-info_label.grid(row=7, column=0, columnspan=3, pady=5)
+        self.elapsed_label = Label(speed_frame, text="Elapsed Time: 00:00:00", bg=bg_color, fg="white", font=("Arial", 10))
+        self.elapsed_label.grid(row=1, column=0, columnspan=3, pady=0)
 
-# Buttons (Start and Stop)
-button_frame = Frame(root, bg=bg_color)
-button_frame.grid(row=8, column=0, columnspan=3, padx=10, pady=10)
+        self.progress_bar = ttk.Progressbar(self.root, length=500, mode='determinate')
+        self.progress_bar.grid(row=8, column=0, columnspan=3, padx=10, pady=5)
 
-start_button = Button(button_frame, text="Start", command=start_generation, bg=button_color, fg=button_text_color, font=("Arial", 12))
-start_button.grid(row=0, column=0, padx=10)
+        self.info_label = Label(self.root, text="Skipped images: 0", bg=bg_color, fg="white", font=("Arial", 10))
+        self.info_label.grid(row=9, column=0, columnspan=3, pady=5)
 
-stop_button = Button(button_frame, text="Stop", command=stop_generation_process, bg=button_color, fg=button_text_color, font=("Arial", 12))
-stop_button.grid(row=0, column=1, padx=10)
+        # Buttons (Start and Stop)
+        button_frame = Frame(self.root, bg=bg_color)
+        button_frame.grid(row=10, column=0, columnspan=3, padx=10, pady=10)
+
+        start_button = Button(button_frame, text="Start", command=start_generation, bg=button_color, fg=button_text_color, font=("Arial", 12))
+        start_button.grid(row=0, column=0, padx=10)
+
+        stop_button = Button(button_frame, text="Stop", command=stop_generation_process, bg=button_color, fg=button_text_color, font=("Arial", 12))
+        stop_button.grid(row=0, column=1, padx=10)
+
+    def update_progress_gui(self, images_generated, total_images, estimated_time, images_per_second, skipped_images, elapsed_time):
+        try:
+            self.progress_label.config(
+                text=f"Progress: {images_generated}/{total_images} "
+                     f"Remaining time: {format_time(estimated_time)}"
+            )
+            self.progress_bar['value'] = (images_generated / total_images) * 100
+            self.info_label.config(text=f"Skipped Images: {skipped_images}")
+            self.speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
+            self.elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
+            logging.info(f"Progress: {images_generated}/{total_images}, Remaining time: {format_time(estimated_time)}, Images per second: {images_per_second:.2f}, Elapsed time: {format_time(elapsed_time)}, Skipped images: {skipped_images}")
+        except Exception as e:
+            logging.error(f"Error in update_progress_gui: {e}")
+            messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Start the main loop of the Tkinter window
-root.mainloop()
+def start_gui():
+    global app
+    root = Tk()
+    app = RGBPixelGeneratorGUI(root)
+    root.mainloop()
 
+if __name__ == "__main__":
+    # Start the GUI in a separate thread
+    gui_thread = threading.Thread(target=start_gui)
+    gui_thread.start()
