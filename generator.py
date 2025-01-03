@@ -16,11 +16,14 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 
 # Configure logging to output to console
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]  # Log output to console
-)
+def configure_logging():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[logging.StreamHandler()]  # Log output to console
+    )
+
+configure_logging()
 
 sys.setrecursionlimit(100000)
 

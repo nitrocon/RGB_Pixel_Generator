@@ -5,13 +5,20 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 python generator.py
 
+# Install PyInstaller for creating standalone executables
 pip install pyinstaller
 pyinstaller --upx-dir C:\Users\Nitrocon\Downloads\upx-4.2.4-win64 --onefile --windowed --icon=icon.ico --add-data "icon.ico;." test.py
 
-
+# List installed packages
 python -m pip list
+
+# Show site-packages directory
 python -m site
+
+# Clear pip cache
 python -m pip cache purge
+
+# Uninstall all installed packages
 python -m pip freeze | xargs python -m pip uninstall -y
 
 
