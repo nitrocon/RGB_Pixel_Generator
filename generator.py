@@ -1,6 +1,3 @@
-import setup
-setup.setup()
-
 import subprocess
 import sys
 import os

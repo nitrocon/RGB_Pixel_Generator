@@ -31,7 +31,7 @@ REM Create a virtual environment with Python 3.12
 echo !COLOR_YELLOW!====================================================
 echo Step 1: Creating virtual environment with Python 3.12...
 echo ====================================================
-python -m venv venv
+python3 -m venv venv
 if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_RED!ERROR: Failed to create virtual environment with Python 3.12.
     pause
@@ -53,14 +53,14 @@ echo !COLOR_GREEN!Virtual environment activated.
 
 REM Display the Python version in the activated environment
 echo !COLOR_BLUE!Python version in the virtual environment:
-python --version
+python3 --version
 
 REM Check if pip is installed in the virtual environment
 echo !COLOR_BLUE!Checking if pip is installed in the virtual environment...
-python -m pip --version >nul 2>nul
+python3 -m pip --version >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_RED!ERROR: pip not found in the virtual environment. Installing pip...
-    python -m ensurepip --upgrade
+    python3 -m ensurepip --upgrade
     if %ERRORLEVEL% NEQ 0 (
         echo !COLOR_RED!ERROR: Failed to install pip in the virtual environment.
         pause
@@ -75,7 +75,7 @@ REM Run the generator.py script
 echo !COLOR_YELLOW!====================================================
 echo Step 6: Running generator.py script...
 echo ====================================================
-python generator.py
+python3 generator.py
 if %ERRORLEVEL% NEQ 0 (
     echo !COLOR_RED!ERROR: Failed to run generator.py script.
     pause
