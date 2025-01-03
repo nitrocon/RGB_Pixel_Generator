@@ -281,86 +281,76 @@ def get_device():
         messagebox.showerror("Error", f"An error occurred: {e}")
         return torch.device("cpu")
 
-# GUI class
-class RGBPixelGeneratorGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("RGB_Pixel_Generator")
-        self.root.resizable(True, True)  # Allow window resizing
+# Create main window
+root = Tk()
+root.title("RGB_Pixel_Generator")
+root.resizable(True, True)  # Allow window resizing
 
-        # Colors for the design
-        bg_color = "#1D3557"        # Background color of the main window
-        label_color = "#457B9D"     # Label color
-        entry_bg_color = "#A8DADC"  # Background color of entry fields
-        button_color = "#E63946"    # Button background color
-        button_text_color = "white" # Button text color
-        entry_text_color = "black"  # Entry text color
+# Colors for the design
+bg_color = "#1D3557"        # Background color of the main window
+label_color = "#457B9D"     # Label color
+entry_bg_color = "#A8DADC"  # Background color of entry fields
+button_color = "#E63946"    # Button background color
+button_text_color = "white" # Button text color
+entry_text_color = "black"  # Entry text color
 
-        self.root.configure(bg=bg_color)
+root.configure(bg=bg_color)
 
-        # Define labels and input fields
-        Label(self.root, text="Output dir:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=10, pady=10, sticky=W)
-        self.output_dir_var = StringVar()
-        output_dir_entry = Entry(self.root, textvariable=self.output_dir_var, width=40, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-        output_dir_entry.grid(row=0, column=1, padx=10, pady=10)
-        output_dir_button = Button(self.root, text="Output", command=select_output_folder, bg=button_color, fg=button_text_color, font=("Arial", 10, "bold"))
-        output_dir_button.grid(row=0, column=2, padx=10, pady=10)
+# Define labels and input fields
+Label(root, text="Output dir:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=10, pady=10, sticky=W)
+output_dir_var = StringVar()
+output_dir_entry = Entry(root, textvariable=output_dir_var, width=40, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+output_dir_entry.grid(row=0, column=1, padx=10, pady=10)
+output_dir_button = Button(root, text="Output", command=select_output_folder, bg=button_color, fg=button_text_color, font=("Arial", 10, "bold"))
+output_dir_button.grid(row=0, column=2, padx=10, pady=10)
 
-        Label(self.root, text="Image size:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=0, padx=10, pady=10, sticky=W)
-        self.image_width_var = IntVar(value=1)
-        image_width_entry = Entry(self.root, textvariable=self.image_width_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-        image_width_entry.grid(row=2, column=1, padx=10, pady=10, sticky=W)
-        Label(self.root, text="x", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=1, padx=70, pady=10, sticky=W)
-        self.image_height_var = IntVar(value=1)
-        image_height_entry = Entry(self.root, textvariable=self.image_height_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-        image_height_entry.grid(row=2, column=1, padx=100, pady=10, sticky=W)
+Label(root, text="Image size:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=0, padx=10, pady=10, sticky=W)
+image_width_var = IntVar(value=1)
+image_width_entry = Entry(root, textvariable=image_width_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+image_width_entry.grid(row=2, column=1, padx=10, pady=10, sticky=W)
+Label(root, text="x", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=2, column=1, padx=70, pady=10, sticky=W)
+image_height_var = IntVar(value=1)
+image_height_entry = Entry(root, textvariable=image_height_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+image_height_entry.grid(row=2, column=1, padx=100, pady=10, sticky=W)
 
-        Label(self.root, text="Color range:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=0, padx=10, pady=10, sticky=W)
-        self.num_colors_start_var = IntVar(value=0)
-        self.num_colors_end_var = IntVar(value=16777215)
-        num_colors_start_entry = Entry(self.root, textvariable=self.num_colors_start_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-        num_colors_start_entry.grid(row=3, column=1, padx=10, pady=10, sticky=W)
-        Label(self.root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
-        num_colors_end_entry = Entry(self.root, textvariable=self.num_colors_end_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
-        num_colors_end_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
+Label(root, text="Color range:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=0, padx=10, pady=10, sticky=W)
+num_colors_start_var = IntVar(value=0)
+num_colors_end_var = IntVar(value=16777215)
+num_colors_start_entry = Entry(root, textvariable=num_colors_start_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+num_colors_start_entry.grid(row=3, column=1, padx=10, pady=10, sticky=W)
+Label(root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
+num_colors_end_entry = Entry(root, textvariable=num_colors_end_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
+num_colors_end_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
 
-        # Progress label and frame for speed and elapsed time
-        self.progress_label = Label(self.root, text="Progress: 0/0 images generated.", bg=bg_color, fg="white", font=("Arial", 10))
-        self.progress_label.grid(row=5, column=0, columnspan=3, pady=5)
+# Progress label and frame for speed and elapsed time
+progress_label = Label(root, text="Progress: 0/0 images generated.", bg=bg_color, fg="white", font=("Arial", 10))
+progress_label.grid(row=5, column=0, columnspan=3, pady=5)
 
-        speed_frame = Frame(self.root, bg=bg_color)
-        speed_frame.grid(row=4, column=0, columnspan=3, padx=10, pady=10)
+speed_frame = Frame(root, bg=bg_color)
+speed_frame.grid(row=4, column=0, columnspan=3, padx=10, pady=10)
 
-        self.speed_label = Label(speed_frame, text="Image per second: 0", bg=bg_color, fg="white", font=("Arial", 10))
-        self.speed_label.grid(row=0, column=0, columnspan=3, pady=0)
+speed_label = Label(speed_frame, text="Image per second: 0", bg=bg_color, fg="white", font=("Arial", 10))
+speed_label.grid(row=0, column=0, columnspan=3, pady=0)
 
-        self.elapsed_label = Label(speed_frame, text="Elapsed Time: 00:00:00", bg=bg_color, fg="white", font=("Arial", 10))
-        self.elapsed_label.grid(row=1, column=0, columnspan=3, pady=0)
+elapsed_label = Label(speed_frame, text="Elapsed Time: 00:00:00", bg=bg_color, fg="white", font=("Arial", 10))
+elapsed_label.grid(row=1, column=0, columnspan=3, pady=0)
 
-        self.progress_bar = ttk.Progressbar(self.root, length=500, mode='determinate')
-        self.progress_bar.grid(row=6, column=0, columnspan=3, padx=10, pady=5)
+progress_bar = ttk.Progressbar(root, length=500, mode='determinate')
+progress_bar.grid(row=6, column=0, columnspan=3, padx=10, pady=5)
 
-        self.info_label = Label(self.root, text="Skipped images: 0", bg=bg_color, fg="white", font=("Arial", 10))
-        self.info_label.grid(row=7, column=0, columnspan=3, pady=5)
+info_label = Label(root, text="Skipped images: 0", bg=bg_color, fg="white", font=("Arial", 10))
+info_label.grid(row=7, column=0, columnspan=3, pady=5)
 
-        # Buttons (Start and Stop)
-        button_frame = Frame(self.root, bg=bg_color)
-        button_frame.grid(row=8, column=0, columnspan=3, padx=10, pady=10)
+# Buttons (Start and Stop)
+button_frame = Frame(root, bg=bg_color)
+button_frame.grid(row=8, column=0, columnspan=3, padx=10, pady=10)
 
-        start_button = Button(button_frame, text="Start", command=start_generation, bg=button_color, fg=button_text_color, font=("Arial", 12))
-        start_button.grid(row=0, column=0, padx=10)
+start_button = Button(button_frame, text="Start", command=start_generation, bg=button_color, fg=button_text_color, font=("Arial", 12))
+start_button.grid(row=0, column=0, padx=10)
 
-        stop_button = Button(button_frame, text="Stop", command=stop_generation_process, bg=button_color, fg=button_text_color, font=("Arial", 12))
-        stop_button.grid(row=0, column=1, padx=10)
+stop_button = Button(button_frame, text="Stop", command=stop_generation_process, bg=button_color, fg=button_text_color, font=("Arial", 12))
+stop_button.grid(row=0, column=1, padx=10)
 
 # Start the main loop of the Tkinter window
-def start_gui():
-    root = Tk()
-    app = RGBPixelGeneratorGUI(root)
-    root.mainloop()
-
-if __name__ == "__main__":
-    # Start the GUI in a separate thread
-    gui_thread = threading.Thread(target=start_gui)
-    gui_thread.start()
+root.mainloop()
 
