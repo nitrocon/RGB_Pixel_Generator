@@ -211,7 +211,7 @@ def select_output_folder():
     try:
         folder = filedialog.askdirectory()
         if folder:
-            output_dir_var.set(os.path.join(folder, "RGB_Colors"))
+            app.output_dir_var.set(os.path.join(folder, "RGB_Colors"))
             logging.info(f"Output directory selected: {folder}/RGB_Colors")
     except Exception as e:
         logging.error(f"Error in select_output_folder: {e}")
@@ -224,16 +224,16 @@ def start_generation():
     try:
         logging.info("Starting image generation process.")
         threading.Thread(target=generate_images, args=(
-            output_dir_var.get(),
-            num_colors_start_var.get(),
-            num_colors_end_var.get(),
-            image_width_var.get(),
-            image_height_var.get(),
-            progress_label,
-            progress_bar,
-            elapsed_label,
-            info_label,
-            update_progress_gui
+            app.output_dir_var.get(),
+            app.num_colors_start_var.get(),
+            app.num_colors_end_var.get(),
+            app.image_width_var.get(),
+            app.image_height_var.get(),
+            app.progress_label,
+            app.progress_bar,
+            app.info_label,
+            app.elapsed_label,
+            app.update_progress_gui
         ), daemon=True).start()
     except Exception as e:
         logging.error(f"Error in start_generation: {e}")
@@ -252,14 +252,14 @@ def stop_generation_process():
 # Update progress bar
 def update_progress_gui(images_generated, total_images, estimated_time, images_per_second, skipped_images, elapsed_time):
     try:
-        progress_label.config(
+        app.progress_label.config(
             text=f"Progress: {images_generated}/{total_images} "
                  f"Remaining time: {format_time(estimated_time)}"
         )
-        progress_bar['value'] = (images_generated / total_images) * 100
-        info_label.config(text=f"Skipped Images: {skipped_images}")
-        speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
-        elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
+        app.progress_bar['value'] = (images_generated / total_images) * 100
+        app.info_label.config(text=f"Skipped Images: {skipped_images}")
+        app.speed_label.config(text=f"Images per Second: {images_per_second:.2f}")
+        app.elapsed_label.config(text=f"Elapsed Time: {format_time(elapsed_time)}")
         logging.info(f"Progress: {images_generated}/{total_images}, Remaining time: {format_time(estimated_time)}, Images per second: {images_per_second:.2f}, Elapsed time: {format_time(elapsed_time)}, Skipped images: {skipped_images}")
     except Exception as e:
         logging.error(f"Error in update_progress_gui: {e}")
@@ -355,6 +355,7 @@ class RGBPixelGeneratorGUI:
 
 # Start the main loop of the Tkinter window
 def start_gui():
+    global app
     root = Tk()
     app = RGBPixelGeneratorGUI(root)
     root.mainloop()
@@ -363,4 +364,3 @@ if __name__ == "__main__":
     # Start the GUI in a separate thread
     gui_thread = threading.Thread(target=start_gui)
     gui_thread.start()
-

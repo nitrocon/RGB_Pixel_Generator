@@ -1,0 +1,22 @@
+cd RGB_Pixel_Generator
+python -m venv venv
+source venv/Scripts/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python generator.py
+
+pip install pyinstaller
+pyinstaller --upx-dir C:\Users\Nitrocon\Downloads\upx-4.2.4-win64 --onefile --windowed --icon=icon.ico --add-data "icon.ico;." test.py
+
+
+python -m pip list
+python -m site
+python -m pip cache purge
+python -m pip freeze | xargs python -m pip uninstall -y
+
+
+
+
+
+
+
