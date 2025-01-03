@@ -7,7 +7,7 @@ python generator.py
 
 # Install PyInstaller for creating standalone executables
 pip install pyinstaller
-pyinstaller --upx-dir C:\Users\Nitrocon\Downloads\upx-4.2.4-win64 --onefile --windowed --icon=icon.ico --add-data "icon.ico;." test.py
+pyinstaller --upx-dir C:\Users\Nitrocon\Downloads\upx-4.2.4-win64 --onefile --windowed --icon=icon.ico --add-data "icon.ico;." generator.py
 
 # List installed packages
 python -m pip list
