@@ -144,7 +144,7 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
         os.makedirs(color_folder, exist_ok=True)  # Ensure the subfolder for the size is created
         logging.info(f"Created size folder: {color_folder}.")
 
-        total_images = (num_colors_end - num_colors_start + 1)
+        total_images = (num_colors_end - num_colors_start)
         images_generated = 0
         skipped_images = 0
         start_time = time.time()
@@ -202,7 +202,7 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
             # Get available memory to determine batch size
             available_ram, available_gpu_memory = get_available_memory()
             batch_size = get_batch_size(available_ram, available_gpu_memory)
-            total_colors = num_colors_end - num_colors_start + 1
+            total_colors = num_colors_end - num_colors_start
             batches = total_colors // batch_size + (1 if total_colors % batch_size != 0 else 0)
 
             # Submit batch processing jobs
@@ -212,7 +212,7 @@ def generate_images(output_dir, num_colors_start, num_colors_end, image_width, i
                     break
 
                 start_idx = num_colors_start + batch_idx * batch_size
-                end_idx = min(num_colors_start + (batch_idx + 1) * batch_size - 1, num_colors_end)
+                end_idx = min(num_colors_start + (batch_idx + 1) * batch_size - 1, num_colors_end - 1)
 
                 futures.append(executor.submit(process_batch, batch_idx, start_idx, end_idx, color_folder))
 
@@ -334,6 +334,16 @@ def get_device():
         messagebox.showerror("Error", f"An error occurred: {e}")
         return torch.device("cpu")
 
+# Reset color range to default values
+def reset_color_range():
+    try:
+        app.num_colors_start_var.set(0)
+        app.num_colors_end_var.set(16777215)
+        logging.info("Color range reset to default values.")
+    except Exception as e:
+        logging.error(f"Error in reset_color_range: {e}")
+        messagebox.showerror("Error", f"An error occurred: {e}")
+
 # GUI class
 class RGBPixelGeneratorGUI:
     def __init__(self, root):
@@ -376,6 +386,8 @@ class RGBPixelGeneratorGUI:
         Label(self.root, text="to", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=3, column=1, padx=70, pady=10, sticky=W)
         num_colors_end_entry = Entry(self.root, textvariable=self.num_colors_end_var, width=10, bg=entry_bg_color, fg=entry_text_color, font=("Arial", 10))
         num_colors_end_entry.grid(row=3, column=1, padx=100, pady=10, sticky=W)
+        reset_button = Button(self.root, text="Reset", command=reset_color_range, bg=button_color, fg=button_text_color, font=("Arial", 8, "bold"))
+        reset_button.grid(row=3, column=2, padx=10, pady=10, sticky=W)
 
         Label(self.root, text="Colors per image:", bg=label_color, fg="white", font=("Arial", 10, "bold")).grid(row=4, column=0, padx=10, pady=10, sticky=W)
         self.colors_per_image_var = IntVar(value=5)
